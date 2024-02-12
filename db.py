@@ -23,7 +23,7 @@ class DB:
             self.__cursor = self.__db.cursor()
             self.__cursor.execute('''CREATE TABLE users(
             tg_id INTEGER,
-            role INTEGER,
+            role BOOLEAN,
             UNIQUE(tg_id)
             )
             ''')
@@ -40,3 +40,12 @@ class DB:
         self.__cursor.execute(queri, args)
         return self.__cursor.fetchall()
 
+    def get_role(self, user_id):
+        is_admin = None
+        quanity = self.__db.db_read(f'SELECT role FROM users WHERE tg_id = "{user_id}"', ())
+        if len(quanity) > 0:
+            if quanity[0][0] == 1:
+                is_admin = True
+            else:
+                is_admin = False
+        return is_admin

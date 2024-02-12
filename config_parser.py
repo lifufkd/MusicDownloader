@@ -14,7 +14,7 @@ class ConfigParser:
     def __init__(self, file_path):
         super(ConfigParser, self).__init__()
         self.__file_path = file_path
-        self.__default = {'tg_api': '', 'admins': []}
+        self.__default = {'tg_api': '', 'admins': [], 'db_file_name': ''}
         self.__current_config = None
         self.parse_args()
 

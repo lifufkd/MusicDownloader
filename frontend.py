@@ -55,3 +55,15 @@ class Bot_inline_btns:
         sbr = types.InlineKeyboardButton('SBR', url='https://github.com/lifufkd')
         self.__markup.add(zzsxd, sbr)
         return self.__markup
+
+
+class BotWords:
+    def __init__(self):
+        super(BotWords, self).__init__()
+        self.__all_words_ru = [', /AddMusic для загрузки музыки', ', /admin для администрирования бота']
+
+    def hello_msg(self, rules):
+        addition_rule = {None: [], True: self.__all_words_ru, False: self.__all_words_ru[0]}
+        base = 'Привет👋\nЯ MusicDownloaderBot🤖 - помогу с загрузкой музыки\nНапишите /creators для получения информации о создателях'
+        return base + ''.join(addition_rule[rules])
+

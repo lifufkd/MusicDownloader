@@ -8,20 +8,28 @@ import json
 
 
 class UserData:
-    def __init__(self):
+    def __init__(self, db):
         super(UserData, self).__init__()
+        self.__db = db
         self.__online_users = {}
-        self.__default = [False, 0]
+        self.__default = [False]
+        self.__current_vote_id = 0
+        self.__vote_id = {}
 
-    def init(self, user_id):  ### запускается только один раз при вводе /start
+    def init_user(self, user_id):  ### запускается только один раз при вводе /start
         if user_id not in self.__online_users.keys():
             self.__online_users.update({user_id: copy.deepcopy(self.__default)})
+
+    def get_vote(self):
+        return self.__vote_id
 
     def get_users(self):
         return self.__online_users
 
-    def get_user(self, user_id):
-        return self.__online_users[user_id]
+    def add_vote(self, user_id):
+        self.__current_vote_id += 1
+        self.__vote_id[user_id] = self.__current_vote_id
 
-    def update_reset(self, tg_id):
-        self.__online_users[tg_id][0:4] = copy.deepcopy(self.__default)
+    def get_user(self):
+        return self.__online_users
+
