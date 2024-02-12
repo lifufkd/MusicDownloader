@@ -10,4 +10,3 @@ class ConfigParser:
         super(ConfigParser, self).__init__()
         self.__path = path
 
-    def
