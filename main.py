@@ -3,7 +3,6 @@
 #                SBR                #
 #####################################
 import os
-
 import telebot
 #from telebot import types
 from config_parser import ConfigParser
@@ -82,7 +81,7 @@ def main():
                         bot.send_message(user_id, 'Путь до папки', reply_markup=buttons.folder_btns())
                     elif call.data == 'changepath':
                         pass
-                if user_state is not None:
+                if db.get_role(user_id) is not None:
                     if call.data == 'searchnickname':
                         pass
                     elif call.data == 'onname':
