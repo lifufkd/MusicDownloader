@@ -13,46 +13,30 @@ class DB:
     def __init__(self, path):
         super(DB, self).__init__()
         self.__db_path = path
-        self.cursor = None
-        self.db = None
+        self.__cursor = None
+        self.__db = None
         self.init()
 
     def init(self):
         if not os.path.exists(self.__db_path):
-            self.db = sqlite3.connect(self.__db_path, check_same_thread=False)
-            self.cursor = self.db.cursor()
-            self.cursor.execute('''CREATE TABLE users(
-            name text,
-            year text,
-            janre text,
-            rate text,
-            country text,
-            watchtime text,
-            desc text,
-            link text,
-            cover BLOB,
-            UNIQUE(name, year, janre, rate, country, watchtime, desc, link, cover)
+            self.__db = sqlite3.connect(self.__db_path, check_same_thread=False)
+            self.__cursor = self.__db.cursor()
+            self.__cursor.execute('''CREATE TABLE users(
+            tg_id INTEGER,
+            role INTEGER,
+            UNIQUE(tg_id)
             )
             ''')
-            self.db.commit()
+            self.__db.commit()
         else:
-            self.db = sqlite3.connect(self.__db_path, check_same_thread=False)
-            self.cursor = self.db.cursor()
+            self.__db = sqlite3.connect(self.__db_path, check_same_thread=False)
+            self.__cursor = self.__db.cursor()
 
-    def db_write(self, data):
-        self.cursor.execute('INSERT OR IGNORE INTO films VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', (data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]))
-        self.db.commit()
+    def db_write(self, queri, args):
+        self.__cursor.execute(queri, args)
+        self.__db.commit()
 
-    def db_read(self, data, mode):
-        out = []
-        years = []
-        if mode == 'year' and '-' in data:
-            years.extend(data.split('-'))
-            self.cursor.execute(f'SELECT name, year, janre, rate, country, watchtime, desc, link, cover FROM films WHERE {mode} BETWEEN {years[0]} AND {years[1]} order by name')
-        else:
-            self.cursor.execute(f'SELECT name, year, janre, rate, country, watchtime, desc, link, cover FROM films WHERE {mode} LIKE "%{data}%" order by name')
-        self.db.commit()
-        for i in self.cursor.fetchall():
-            out.append(i)
-        if len(out) != 0:
-            return out
+    def db_read(self, queri, args):
+        self.__cursor.execute(queri, args)
+        return self.__cursor.fetchall()
+
