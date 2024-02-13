@@ -5,6 +5,7 @@
 import os
 import telebot
 #from telebot import types
+from threading import Lock
 from config_parser import ConfigParser
 from frontend import Bot_inline_btns, BotWords
 from backend import UserData
@@ -102,7 +103,7 @@ def main():
 if '__main__' == __name__:
     work_dir = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser(f'{work_dir}/{config_name}').get_config()
-    db = DB(f'{work_dir}/{config["db_file_name"]}')
+    db = DB(f'{work_dir}/{config["db_file_name"]}', Lock())
     words = BotWords()
     user_data = UserData(db)
     bot = telebot.TeleBot(config['tg_api'])
