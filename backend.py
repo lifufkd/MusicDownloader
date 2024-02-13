@@ -12,13 +12,12 @@ class UserData:
         super(UserData, self).__init__()
         self.__db = db
         self.__online_users = {}
-        self.__default = [False]
         self.__current_vote_id = 0
         self.__vote_id = {}
 
-    def init_user(self, user_id):  ### запускается только один раз при вводе /start
+    def init_user(self, user_id, data):  ### запускается только один раз при вводе /start
         if user_id not in self.__online_users.keys():
-            self.__online_users.update({user_id: copy.deepcopy(self.__default)})
+            self.__online_users.update({user_id: copy.deepcopy([False, data[0], data[1], data[2]])})
 
     def get_vote(self):
         return self.__vote_id
@@ -28,8 +27,28 @@ class UserData:
 
     def add_vote(self, user_id):
         self.__current_vote_id += 1
-        self.__vote_id[user_id] = self.__current_vote_id
+        self.__vote_id[str(self.__current_vote_id)] = user_id
 
-    def get_user(self):
-        return self.__online_users
+    def get_user(self, user_id):
+        if user_id in self.__online_users.keys():
+            return self.__online_users[user_id]
+
+
+class DbAct:
+    def __init__(self, db):
+        super(DbAct, self).__init__()
+        self.__db = db
+
+    def add_user(self, user_id):
+        self.__db.db_write('INSERT INTO users (tg_id, role) VALUES (?, ?)', (user_id, False))
+
+    def get_admins(self):
+        data = list()
+        admins = self.__db.db_read('SELECT tg_id FROM users WHERE role = "1"', ())
+        if len(admins) > 0:
+            for i in admins:
+                data.append(i[0])
+        else:
+            data = []
+        return data
 

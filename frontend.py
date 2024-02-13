@@ -35,12 +35,6 @@ class Bot_inline_btns:
         self.__markup.add(btn1)
         return self.__markup
 
-    def verification(self):
-        btn1 = types.InlineKeyboardButton('Подтвердить', callback_data='accept')
-        btn2 = types.InlineKeyboardButton('Отклонить', callback_data='rejected')
-        self.__markup.add(btn1, btn2)
-        return self.__markup
-
     def dow_music(self):
         btn1 = types.InlineKeyboardButton('По названию', callback_data='onname')
         btn2 = types.InlineKeyboardButton('По ссылке YouTube', callback_data='onyoutube')
