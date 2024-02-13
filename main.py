@@ -17,9 +17,9 @@ config_name = 'secrets.json'
 
 def broadcast_msg(user_id):
     if user_id in user_data.get_user().keys() and user_id in user_data.get_vote():
-        buttons = Bot_inline_btns()
+        buttons = Bot_inline_btns().verification()
         for admin in config['admins']:
-            bot.send_message(admin, f'Новый пользователь! Подтвердите верификацию.\nID обращения: {user_data.get_vote()[user_id]}', reply_markup=buttons.verification())
+            bot.send_message(admin, f'Новый пользователь! Подтвердите верификацию.\nID обращения: {user_data.get_vote()[user_id]}', reply_markup=buttons)
 
 
 def main():
