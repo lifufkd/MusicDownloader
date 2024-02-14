@@ -35,9 +35,10 @@ class UserData:
 
 
 class DbAct:
-    def __init__(self, db):
+    def __init__(self, db, config):
         super(DbAct, self).__init__()
         self.__db = db
+        self.__config = config
 
     def add_user(self, user_id):
         self.__db.db_write('INSERT INTO users (tg_id, role) VALUES (?, ?)', (user_id, False))
@@ -45,10 +46,12 @@ class DbAct:
     def get_admins(self):
         data = list()
         admins = self.__db.db_read('SELECT tg_id FROM users WHERE role = "1"', ())
+        for i in self.__config['admins']:
+            admins.append((i, ))
         if len(admins) > 0:
             for i in admins:
                 data.append(i[0])
         else:
             data = []
-        return data
+        return set(data)
 

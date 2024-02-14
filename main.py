@@ -23,7 +23,7 @@ def get_key(d, value):
 def broadcast_msg(user_id):
     if user_id in user_data.get_users().keys() and user_id in user_data.get_vote().values():
         personal_data = user_data.get_users()[user_id]
-        for admin in set(config['admins'] + db_actions.get_admins()):
+        for admin in db_actions.get_admins():
             bot.send_message(admin, f'Новый пользователь!\nНикнейм: @{personal_data[1]}\nИмя: {personal_data[2]}\nФамилия: '
                                     f'{personal_data[3]}\nID Пользователя: {user_id}\nID обращения: '
                                     f'{get_key(user_data.get_vote(), user_id)}\nПодтвердите верификацию '
@@ -115,9 +115,9 @@ def main():
 if '__main__' == __name__:
     work_dir = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser(f'{work_dir}/{config_name}').get_config()
-    db = DB(f'{work_dir}/{config["db_file_name"]}', Lock())
+    db = DB(f'{work_dir}/{config["db_file_name"]}', Lock(), config)
     words = BotWords()
     user_data = UserData(db)
-    db_actions = DbAct(db)
+    db_actions = DbAct(db, config)
     bot = telebot.TeleBot(config['tg_api'])
     main()

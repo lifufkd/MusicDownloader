@@ -10,9 +10,10 @@ import sqlite3
 
 
 class DB:
-    def __init__(self, path, lock):
+    def __init__(self, path, lock, config):
         super(DB, self).__init__()
         self.__lock = lock
+        self.__config = config
         self.__db_path = path
         self.__cursor = None
         self.__db = None
@@ -48,6 +49,9 @@ class DB:
     def get_role(self, user_id):
         is_admin = None
         quanity = self.db_read(f'SELECT role FROM users WHERE tg_id = "{user_id}"', ())
+        for i in self.__config['admins']:
+            if i == user_id:
+                quanity.append((1, ))
         if len(quanity) > 0:
             if quanity[0][0] == 1:
                 is_admin = True
