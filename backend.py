@@ -3,35 +3,19 @@
 #                SBR                #
 #####################################
 import copy
-import json
+from pytube import YouTube
 #####################################
 
 
-class UserData:
-    def __init__(self, db):
-        super(UserData, self).__init__()
-        self.__db = db
-        self.__online_users = {}
-        self.__current_vote_id = 0
-        self.__vote_id = {}
+class TempUserData:
+    def __init__(self):
+        super(TempUserData, self).__init__()
+        self.__user_data = {}
 
-    def init_user(self, user_id, data):  ### запускается только один раз при вводе /start
-        if user_id not in self.__online_users.keys():
-            self.__online_users.update({user_id: copy.deepcopy([False, data[0], data[1], data[2]])})
-
-    def get_vote(self):
-        return self.__vote_id
-
-    def get_users(self):
-        return self.__online_users
-
-    def add_vote(self, user_id):
-        self.__current_vote_id += 1
-        self.__vote_id[str(self.__current_vote_id)] = user_id
-
-    def get_user(self, user_id):
-        if user_id in self.__online_users.keys():
-            return self.__online_users[user_id]
+    def temp_data(self, user_id):
+        if user_id not in self.__user_data.keys():
+            self.__user_data.update({user_id: [None]})
+        return self.__user_data
 
 
 class DbAct:
@@ -39,9 +23,74 @@ class DbAct:
         super(DbAct, self).__init__()
         self.__db = db
         self.__config = config
+        self.__user_fields = {0: 'id', 1: 'ник', 2: 'имя', 3: 'фамилия', 4: 'заблокирован', 5: 'роль'}
+        self.__blocked = {0: 'нет', 1: 'да'}
+        self.__roles = {None: 'не определена', 0: 'пользователь', 1: 'администратор'}
 
-    def add_user(self, user_id):
-        self.__db.db_write('INSERT INTO users (tg_id, role) VALUES (?, ?)', (user_id, False))
+    def add_user(self, data):
+        self.__db.db_write('INSERT OR IGNORE INTO users (tg_id, nickname, firstname, lastname, blocked) VALUES (?, ?, ?, ?, ?)', (data[0], data[1], data[2], data[3], False))
+
+    def update_role_user(self, user_id):
+        self.__db.db_write('UPDATE users SET role = ? WHERE tg_id = ?', (False, user_id))
+
+    def get_user(self, user_id):
+        user = self.__db.db_read('SELECT nickname, firstname, lastname, blocked FROM users WHERE tg_id = ?', (user_id, ))
+        if len(user) > 0:
+            return list(user[0])
+
+    def block_user(self, user_id):
+        self.__db.db_write('UPDATE users SET blocked = ? WHERE tg_id = ?', (True, user_id))
+
+    def unblock_user(self, user_id):
+        self.__db.db_write('UPDATE users SET blocked = ? WHERE tg_id = ?', (False, user_id))
+
+    def add_request(self, user_id):
+        self.__db.db_write(f'INSERT INTO request (tg_id) VALUES ({user_id})', ())
+
+    def get_request_by_user_id(self, user_id):
+        request = self.__db.db_read('SELECT request_id FROM request WHERE tg_id = ?', (user_id,))
+        if len(request) > 0:
+            return request[0][0]
+
+    def get_request_by_request_id(self, request_id):
+        request = self.__db.db_read('SELECT tg_id FROM request WHERE request_id = ?', (request_id,))
+        if len(request) > 0:
+            return request[0][0]
+
+    def del_request_by_request_id(self, request_id):
+        self.__db.db_write(f'DELETE FROM request WHERE request_id = ?', (request_id, ))
+
+    def search_by_nick(self, nickname):
+        out = ''
+        user = self.__db.db_read('SELECT * FROM users WHERE nickname = ?', (nickname,))
+        if len(user) > 0:
+            for data in range(len(user[0])):
+                if data == 4:
+                    out += f'{data+1} {self.__user_fields[data]}: {self.__blocked[user[0][data]]}\n'
+                elif data == 5:
+                    out += f'{data + 1} {self.__user_fields[data]}: {self.__roles[user[0][data]]}\n'
+                else:
+                    out += f'{data + 1} {self.__user_fields[data]}: {user[0][data]}\n'
+        else:
+            out = 'Пользователь не найден!'
+        return out
+
+    def search_all(self):
+        out = ''
+        users = self.__db.db_read('SELECT * FROM users', ())
+        if len(users) > 0:
+            for user in range(len(users)):
+                out += f'{user+1} '
+                for admin in range(len(users[user])):
+                    if admin == 4:
+                        out += f'{self.__user_fields[admin]}: {self.__blocked[users[user][admin]]} '
+                    elif admin == 5:
+                        out += f'{self.__user_fields[admin]}: {self.__roles[users[user][admin]]} '
+                    else:
+                        out += f'{self.__user_fields[admin]}: {users[user][admin]} '
+        else:
+            out = 'Пользователь не найден!'
+        return out
 
     def get_admins(self):
         data = list()
@@ -54,4 +103,31 @@ class DbAct:
         else:
             data = []
         return set(data)
+
+    def get_role(self, user_id):
+        is_admin = None
+        quanity = self.__db.db_read(f'SELECT role FROM users WHERE tg_id = "{user_id}"', ())
+        for i in self.__config['admins']:
+            if i == user_id:
+                is_admin = True
+        if len(quanity) > 0 and is_admin is None:
+            if quanity[0][0] == 1:
+                is_admin = True
+            elif quanity[0][0] == 0:
+                is_admin = False
+        return is_admin
+
+
+
+    def get_all_users(self):
+        data = list()
+        admins = self.__db.db_read('SELECT tg_id FROM users WHERE role = "1"', ())
+
+
+class MusicDownload:
+    def __init__(self):
+        super(MusicDownload, self).__init__()
+
+    def youtube_download(self, url):
+        YouTube(url).streams.filter(only_audio=True).first().download(output_path='Lost Wave', )
 

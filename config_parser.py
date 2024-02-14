@@ -14,29 +14,31 @@ class ConfigParser:
     def __init__(self, file_path):
         super(ConfigParser, self).__init__()
         self.__file_path = file_path
-        self.__default = {'tg_api': '', 'admins': [], 'db_file_name': ''}
+        self.__default = {'tg_api': '', 'admins': [], 'db_file_name': '', 'misic_folder': ''}
         self.__current_config = None
-        self.parse_args()
+        self.load_conf()
 
     def load_conf(self):
         if os.path.exists(self.__file_path):
             with open(self.__file_path, 'r', encoding='utf-8') as file:
-                config = json.loads(file.read())
-            if len(config['tg_api']) == 0:
+                self.__current_config = json.loads(file.read())
+            if len(self.__current_config['tg_api']) == 0:
                 sys.exit('config is invalid')
         else:
-            self.create_conf()
+            self.create_conf(self.__default)
             sys.exit('config is not existed')
-        return config
 
-    def parse_args(self):
-        self.__current_config = self.load_conf()
-
-    def create_conf(self):
+    def create_conf(self, config):
         with open(self.__file_path, 'w', encoding='utf-8') as file:
-            file.write(json.dumps(self.__default, sort_keys=True, indent=4))
+            file.write(json.dumps(config, sort_keys=True, indent=4))
 
     def get_config(self):
         return self.__current_config
+
+    def update_music_folder(self, new_path):
+        if os.path.exists(new_path):
+            self.__current_config['misic_folder'] = new_path
+            self.create_conf(self.__current_config)
+            return True
 
 

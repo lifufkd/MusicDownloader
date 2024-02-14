@@ -2,8 +2,6 @@
 #            Created by             #
 #                SBR                #
 #####################################
-import copy
-import json
 import os
 import sqlite3
 #####################################
@@ -23,10 +21,29 @@ class DB:
         if not os.path.exists(self.__db_path):
             self.__db = sqlite3.connect(self.__db_path, check_same_thread=False)
             self.__cursor = self.__db.cursor()
-            self.__cursor.execute('''CREATE TABLE users(
+            self.__cursor.execute('''
+            CREATE TABLE users(
             tg_id INTEGER,
+            nickname TEXT,
+            firstname TEXT,
+            lastname TEXT,
+            blocked BOOLEAN,
             role BOOLEAN,
             UNIQUE(tg_id)
+            )
+            ''')
+            self.__cursor.execute('''
+            CREATE TABLE downloads(
+            tg_id INTEGER,
+            link TEXT,
+            platform INT,
+            time INTEGER
+            )
+            ''')
+            self.__cursor.execute('''
+            CREATE TABLE request(
+            request_id INTEGER primary key autoincrement not null,
+            tg_id INTEGER
             )
             ''')
             self.__db.commit()
@@ -45,19 +62,6 @@ class DB:
         self.__cursor.execute(queri, args)
         self.realise_lock()
         return self.__cursor.fetchall()
-
-    def get_role(self, user_id):
-        is_admin = None
-        quanity = self.db_read(f'SELECT role FROM users WHERE tg_id = "{user_id}"', ())
-        for i in self.__config['admins']:
-            if i == user_id:
-                quanity.append((1, ))
-        if len(quanity) > 0:
-            if quanity[0][0] == 1:
-                is_admin = True
-            else:
-                is_admin = False
-        return is_admin
     
     def set_lock(self):
         self.__lock.acquire(True)
