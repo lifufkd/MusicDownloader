@@ -3,6 +3,8 @@
 #                SBR                #
 #####################################
 import os
+import platform
+
 import telebot
 from threading import Lock
 import shutil
@@ -149,13 +151,13 @@ def main():
 
 
 if '__main__' == __name__:
-    users_actions = {}
+    os_type = platform.system()
     work_dir = os.path.dirname(os.path.realpath(__file__))
-    config = ConfigParser(f'{work_dir}/{config_name}')
+    config = ConfigParser(f'{work_dir}/{config_name}', os_type)
     db = DB(f'{work_dir}/{config.get_config()["db_file_name"]}', Lock(), config.get_config())
     temp_user_data = TempUserData()
     db_actions = DbAct(db, config.get_config())
-    music_downloader = MusicDownload(db_actions)
+    music_downloader = MusicDownload(db_actions, os_type)
     words = BotWords()
     bot = telebot.TeleBot(config.get_config()['tg_api'])
     main()

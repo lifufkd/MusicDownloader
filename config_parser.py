@@ -11,10 +11,11 @@ import sys
 #####################################
 
 class ConfigParser:
-    def __init__(self, file_path):
+    def __init__(self, file_path, os_type):
         super(ConfigParser, self).__init__()
         self.__file_path = file_path
-        self.__default = {'tg_api': '', 'admins': [], 'db_file_name': '', 'misic_folder': ''}
+        self.__default_pathes = {'Windows': 'C:\\', 'Linux': '/'}
+        self.__default = {'tg_api': '', 'admins': [], 'db_file_name': '', 'misic_folder': self.__default_pathes[os_type]}
         self.__current_config = None
         self.load_conf()
 

@@ -135,9 +135,11 @@ class DbAct:
 
 
 class MusicDownload:
-    def __init__(self, db_act):
+    def __init__(self, db_act, os_type):
         super(MusicDownload, self).__init__()
         self.__db_act = db_act
+        self.__default_pathes = {'Windows': 'C:\\', 'Linux': '/'}
+        self.__os_type = os_type
 
     def convert_to_mp3(self, input_file, output_file):
         audio = AudioSegment.from_file(input_file)
@@ -151,8 +153,8 @@ class MusicDownload:
                 stat = 0
             else:
                 file.filter(only_audio=True).first().download(output_path=folder)
-                self.convert_to_mp3(f'{folder}\\{file[0].default_filename}', f'{folder}\\{file[0].default_filename[:-1]+ "3"}')
-                os.remove(f'{folder}\\{file[0].default_filename}')
+                self.convert_to_mp3(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}', f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename[:-1]+ "3"}')
+                os.remove(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}')
                 self.__db_act.add_download([user_id, url, 'YouTube', int(time.time())])
                 stat = 1
         except:
