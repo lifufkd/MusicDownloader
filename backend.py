@@ -2,7 +2,9 @@
 #            Created by             #
 #                SBR                #
 #####################################
-import copy
+import os
+import time
+from pydub import AudioSegment
 from pytube import YouTube
 #####################################
 
@@ -26,9 +28,14 @@ class DbAct:
         self.__user_fields = {0: 'id', 1: 'ник', 2: 'имя', 3: 'фамилия', 4: 'заблокирован', 5: 'роль'}
         self.__blocked = {0: 'нет', 1: 'да'}
         self.__roles = {None: 'не определена', 0: 'пользователь', 1: 'администратор'}
+        self.__period = {'month': 2678400, 'week': 604800, 'day': 86400}
 
-    def add_user(self, data):
-        self.__db.db_write('INSERT OR IGNORE INTO users (tg_id, nickname, firstname, lastname, blocked) VALUES (?, ?, ?, ?, ?)', (data[0], data[1], data[2], data[3], False))
+    def add_user(self, data, config_admins):
+        if data[0] in config_admins:
+            role = True
+        else:
+            role = None
+        self.__db.db_write('INSERT OR IGNORE INTO users (tg_id, nickname, firstname, lastname, blocked, role) VALUES (?, ?, ?, ?, ?, ?)', (data[0], data[1], data[2], data[3], False, role))
 
     def update_role_user(self, user_id):
         self.__db.db_write('UPDATE users SET role = ? WHERE tg_id = ?', (False, user_id))
@@ -59,6 +66,9 @@ class DbAct:
 
     def del_request_by_request_id(self, request_id):
         self.__db.db_write(f'DELETE FROM request WHERE request_id = ?', (request_id, ))
+
+    def add_download(self, data):
+        self.__db.db_write(f'INSERT INTO downloads (tg_id, link, platform, time) VALUES (?, ?, ?, ?)', (data[0], data[1], data[2], data[3]))
 
     def search_by_nick(self, nickname):
         out = ''
@@ -92,11 +102,19 @@ class DbAct:
             out = 'Пользователь не найден!'
         return out
 
+    def get_users_quanity(self):
+        return self.__db.db_read('SELECT count(*) FROM users', ())[0][0]
+
+    def get_download_quanity(self, period):
+        return self.__db.db_read(f'SELECT count(*) FROM downloads WHERE time > {int(time.time()) - self.__period[period]}', ())[0][0]
+
+    def get_download_quanity_all(self):
+        return self.__db.db_read(f'SELECT count(*) FROM downloads', ())[0][0]
+
+
     def get_admins(self):
         data = list()
         admins = self.__db.db_read('SELECT tg_id FROM users WHERE role = "1"', ())
-        for i in self.__config['admins']:
-            admins.append((i, ))
         if len(admins) > 0:
             for i in admins:
                 data.append(i[0])
@@ -105,29 +123,39 @@ class DbAct:
         return set(data)
 
     def get_role(self, user_id):
-        is_admin = None
         quanity = self.__db.db_read(f'SELECT role FROM users WHERE tg_id = "{user_id}"', ())
-        for i in self.__config['admins']:
-            if i == user_id:
-                is_admin = True
-        if len(quanity) > 0 and is_admin is None:
+        if len(quanity) > 0:
             if quanity[0][0] == 1:
                 is_admin = True
             elif quanity[0][0] == 0:
                 is_admin = False
-        return is_admin
-
-
-
-    def get_all_users(self):
-        data = list()
-        admins = self.__db.db_read('SELECT tg_id FROM users WHERE role = "1"', ())
+            else:
+                is_admin = None
+            return is_admin
 
 
 class MusicDownload:
-    def __init__(self):
+    def __init__(self, db_act):
         super(MusicDownload, self).__init__()
+        self.__db_act = db_act
 
-    def youtube_download(self, url):
-        YouTube(url).streams.filter(only_audio=True).first().download(output_path='Lost Wave', )
+    def convert_to_mp3(self, input_file, output_file):
+        audio = AudioSegment.from_file(input_file)
+        audio.export(output_file, format='mp3')
+
+    def youtube_download(self, url, folder, user_id):
+        stat = None
+        try:
+            file = YouTube(url).streams
+            if file[0].default_filename[:-1] + '3' in os.listdir(folder):
+                stat = 0
+            else:
+                file.filter(only_audio=True).first().download(output_path=folder)
+                self.convert_to_mp3(f'{folder}\\{file[0].default_filename}', f'{folder}\\{file[0].default_filename[:-1]+ "3"}')
+                os.remove(f'{folder}\\{file[0].default_filename}')
+                self.__db_act.add_download([user_id, url, 'YouTube', int(time.time())])
+                stat = 1
+        except:
+            pass
+        return stat
 

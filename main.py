@@ -5,6 +5,8 @@
 import os
 import telebot
 from threading import Lock
+import shutil
+import math
 from config_parser import ConfigParser
 from frontend import Bot_inline_btns, BotWords
 from backend import DbAct, TempUserData, MusicDownload
@@ -12,6 +14,21 @@ from db import DB
 ############static variables#####################
 config_name = 'secrets.json'
 #################################################
+
+
+def convert_size(size_bytes):
+   if size_bytes == 0:
+       return "0B"
+   size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+   i = int(math.floor(math.log(size_bytes, 1024)))
+   p = math.pow(1024, i)
+   s = round(size_bytes / p, 2)
+   return "%s %s" % (s, size_name[i])
+
+
+def get_folder_size(folder,):
+   total, used, free = shutil.disk_usage(folder)
+   return convert_size(total), convert_size(free)
 
 
 def broadcast_msg(user_id):
@@ -29,7 +46,7 @@ def main():
     def start(message):
         user_id = message.chat.id
         db_actions.add_user(
-            [user_id, message.from_user.username, message.from_user.first_name, message.from_user.last_name])
+            [user_id, message.from_user.username, message.from_user.first_name, message.from_user.last_name], config.get_config()['admins'])
         if not db_actions.get_user(user_id)[3]:
             buttons = Bot_inline_btns()
             bot.reply_to(message, words.hello_msg(db_actions.get_role(user_id)))
@@ -51,9 +68,10 @@ def main():
                                  reply_markup=buttons.authors())
                 elif db_actions.get_role(user_id):  # раздел с привилегиями админа
                     if command == 'admin':
-                        bot.send_message(user_id, f'Привет, {message.from_user.first_name}\nКоличество пользователей:\n'
-                                                  f'Всего загружено песен:\nТекущая папка загрузки:\n'
-                                                  f'Свободное место на диске:\n', reply_markup=buttons.admin_btns())
+                        total, free = get_folder_size(config.get_config()["misic_folder"])
+                        bot.send_message(user_id, f'Привет, {message.from_user.first_name}\nКоличество пользователей: {db_actions.get_users_quanity()}\n'
+                                                  f'Всего загружено песен: {db_actions.get_download_quanity_all()}\nТекущая папка загрузки: {config.get_config()["misic_folder"]}\n'
+                                                  f'Свободное место на диске {free} из {total}\n', reply_markup=buttons.admin_btns())
                     if db_actions.get_request_by_request_id(command[7:]) is not None:
                         candidate_id = db_actions.get_request_by_request_id(command[7:])
                         if command[:6] == 'accept':
@@ -72,8 +90,11 @@ def main():
         if user_current_action == 0:
             bot.send_message(user_id, f'Информация о пользователе\n{db_actions.search_by_nick(user_input)}')
         elif user_current_action == 1:
-            if music_downloader.youtube_download(user_input):
+            state = music_downloader.youtube_download(user_input, config.get_config()['misic_folder'], user_id)
+            if state == 1:
                 bot.send_message(user_id, 'Ваша песня успешно загружена!')
+            elif state == 0:
+                bot.send_message(user_id, 'Песня уже загружена!')
             else:
                 bot.send_message(user_id, 'Произошла ошибка, попробуйте ещё раз')
         elif user_current_action == 2:
@@ -96,8 +117,9 @@ def main():
                     broadcast_msg(user_id)
                 if db_actions.get_role(user_id): # админ функции
                     if call.data == 'stats':
-                        bot.send_message(user_id, 'Всего скачиваний:\nСкачиваний за месяц:\nСкачиваний за неделю:\n'
-                                                               'Скачиваний за день:')
+                        bot.send_message(user_id, f'Всего скачиваний: {db_actions.get_download_quanity_all()}\nСкачиваний за месяц: '
+                                                  f'{db_actions.get_download_quanity("month")}\nСкачиваний за неделю: {db_actions.get_download_quanity("week")}\n'
+                                                               f'Скачиваний за день: {db_actions.get_download_quanity("day")}')
                     elif call.data == 'users':
                         bot.send_message(user_id, 'Выберите действие', reply_markup=buttons.users_btns())
                     elif call.data == 'allusers':
@@ -132,8 +154,8 @@ if '__main__' == __name__:
     config = ConfigParser(f'{work_dir}/{config_name}')
     db = DB(f'{work_dir}/{config.get_config()["db_file_name"]}', Lock(), config.get_config())
     temp_user_data = TempUserData()
-    music_downloader = MusicDownload()
-    words = BotWords()
     db_actions = DbAct(db, config.get_config())
+    music_downloader = MusicDownload(db_actions)
+    words = BotWords()
     bot = telebot.TeleBot(config.get_config()['tg_api'])
     main()
