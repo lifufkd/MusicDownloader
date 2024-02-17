@@ -55,14 +55,14 @@ def main():
             if db_actions.get_role(user_id) is None:
                 bot.send_message(user_id, 'Пройдите модерацию✅', reply_markup=buttons.start_btns())
 
-    @bot.message_handler(commands=['AddMusic', 'creators', 'admin', 'accept', 'reject'])
+    @bot.message_handler(commands=['addmusic', 'creators', 'admin', 'accept', 'reject'])
     def addmusic(message):
         command = message.text.replace('/', '')
         user_id = message.chat.id
         if db_actions.get_user(user_id) is not None:
             if not db_actions.get_user(user_id)[3]:
                 buttons = Bot_inline_btns()
-                if command == 'AddMusic' and db_actions.get_role(user_id) is not None:
+                if command == 'addmusic' and db_actions.get_role(user_id) is not None:
                     bot.send_message(user_id, 'Скачать песню', reply_markup=buttons.dow_music())
                 elif command == 'creators':
                     bot.reply_to(message,
