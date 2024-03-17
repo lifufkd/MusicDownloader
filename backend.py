@@ -138,7 +138,7 @@ class MusicDownload:
     def __init__(self, db_act, os_type):
         super(MusicDownload, self).__init__()
         self.__db_act = db_act
-        self.__default_pathes = {'Windows': 'C:\\', 'Linux': '/'}
+        self.__default_pathes = {'Windows': '\\', 'Linux': '/'}
         self.__os_type = os_type
 
     def convert_to_mp3(self, input_file, output_file):
@@ -157,7 +157,7 @@ class MusicDownload:
                 os.remove(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}')
                 self.__db_act.add_download([user_id, url, 'YouTube', int(time.time())])
                 stat = 1
-        except:
-            pass
+        except Exception as e:
+            print(e)
         return stat
 
