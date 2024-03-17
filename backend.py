@@ -4,7 +4,7 @@
 #####################################
 import os
 import time
-from pydub import AudioSegment
+import subprocess
 from pytube import YouTube
 #####################################
 
@@ -141,19 +141,20 @@ class MusicDownload:
         self.__default_pathes = {'Windows': '\\', 'Linux': '/'}
         self.__os_type = os_type
 
-    def convert_to_mp3(self, input_file, output_file):
-        audio = AudioSegment.from_file(input_file)
-        audio.export(output_file, format='mp3')
+    def convert_to_aac(self, input_file, output_file, ffmpeg):
+        command = [ffmpeg, '-i', input_file, '-c:a', 'aac', output_file]
+        subprocess.run(command)
 
-    def youtube_download(self, url, folder, user_id):
+    def youtube_download(self, url, folder, user_id, ffmpeg):
         stat = None
         try:
             file = YouTube(url).streams
-            if file[0].default_filename[:-1] + '3' in os.listdir(folder):
+            if file[0].default_filename[:-3] + 'aac' in os.listdir(folder):
                 stat = 0
             else:
                 file.filter(only_audio=True).first().download(output_path=folder)
-                self.convert_to_mp3(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}', f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename[:-1]+ "3"}')
+                self.convert_to_aac(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}',
+                                    f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename[:-3]+ "aac"}', ffmpeg)
                 os.remove(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}')
                 self.__db_act.add_download([user_id, url, 'YouTube', int(time.time())])
                 stat = 1
