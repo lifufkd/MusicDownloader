@@ -5,7 +5,7 @@
 import os
 import time
 import subprocess
-from pytube import YouTube
+import yt_dlp as youtube_dl
 #####################################
 
 
@@ -136,7 +136,6 @@ class DbAct:
 
 class MusicDownload:
     def __init__(self, db_act, os_type):
-        super(MusicDownload, self).__init__()
         self.__db_act = db_act
         self.__default_pathes = {'Windows': '\\', 'Linux': '/'}
         self.__os_type = os_type
@@ -145,20 +144,42 @@ class MusicDownload:
         command = [ffmpeg, '-i', input_file, '-c:a', 'aac', output_file]
         subprocess.run(command)
 
-    def youtube_download(self, url, folder, user_id, ffmpeg):
+    def youtube_download(self, url, folder, user_id, ffmpeg, proxy=None):
         stat = None
         try:
-            file = YouTube(url).streams
-            if file[0].default_filename[:-3] + 'aac' in os.listdir(folder):
-                stat = 0
-            else:
-                file.filter(only_audio=True).first().download(output_path=folder)
-                self.convert_to_aac(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}',
-                                    f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename[:-3]+ "aac"}', ffmpeg)
-                os.remove(f'{folder}{self.__default_pathes[self.__os_type]}{file[0].default_filename}')
-                self.__db_act.add_download([user_id, url, 'YouTube', int(time.time())])
-                stat = 1
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': os.path.join(folder, '%(title)s.%(ext)s'),
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'm4a',
+                    'preferredquality': '192',
+                }],
+                'ffmpeg_location': ffmpeg,
+                'prefer_ffmpeg': True,
+                'keepvideo': False,
+                'verbose': True,  # Enable verbose logging for debugging
+            }
+
+            if proxy:
+                ydl_opts['proxy'] = proxy
+
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(url, download=False)
+                file_name = ydl.prepare_filename(info_dict)
+                output_file = os.path.splitext(file_name)[0] + '.m4a'
+
+                print("*"*50)
+                print(output_file)
+                print("*" * 50)
+                if os.path.exists(output_file):
+                    stat = 0
+                else:
+                    ydl.download([url])
+                    # self.convert_to_aac(file_name, output_file, ffmpeg)
+                    # os.remove(file_name)  # Remove original downloaded file
+                    self.__db_act.add_download([user_id, url, 'YouTube', int(time.time())])
+                    stat = 1
         except Exception as e:
             print(e)
         return stat
-
