@@ -140,11 +140,7 @@ class MusicDownload:
         self.__default_pathes = {'Windows': '\\', 'Linux': '/'}
         self.__os_type = os_type
 
-    def convert_to_aac(self, input_file, output_file, ffmpeg):
-        command = [ffmpeg, '-i', input_file, '-c:a', 'aac', output_file]
-        subprocess.run(command)
-
-    def youtube_download(self, url, folder, user_id, ffmpeg, proxy=None):
+    def youtube_download(self, url, folder, user_id, ffmpeg, proxy=None, login=None, password=None, cookies=None, oauth=None):
         stat = None
         try:
             ydl_opts = {
@@ -158,11 +154,22 @@ class MusicDownload:
                 'ffmpeg_location': ffmpeg,
                 'prefer_ffmpeg': True,
                 'keepvideo': False,
-                'verbose': True,  # Enable verbose logging for debugging
+                'verbose': True
             }
 
             if proxy:
                 ydl_opts['proxy'] = proxy
+
+            if login:
+                ydl_opts['username'] = login
+            if password:
+                ydl_opts['password'] = password
+            # if cookies:
+            #     ydl_opts['cookiefile'] = cookies
+            # if oauth:
+            #     ydl_opts['oauth_token'] = self.read_oauth_token(oauth)
+
+            print(ydl_opts)
 
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(url, download=False)
@@ -180,6 +187,6 @@ class MusicDownload:
                     # os.remove(file_name)  # Remove original downloaded file
                     self.__db_act.add_download([user_id, url, 'YouTube', int(time.time())])
                     stat = 1
-        except Exception as e:
-            print(e)
+        except:
+            pass
         return stat

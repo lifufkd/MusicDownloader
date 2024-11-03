@@ -92,9 +92,13 @@ def main():
             bot.send_message(user_id, f'Информация о пользователе\n{db_actions.search_by_nick(user_input)}')
         elif user_current_action == 1:
             bot.send_message(user_id, 'Загрузка началась, пожалуйста подождите или загрузите ещё песню!')
-            state = music_downloader.youtube_download(user_input, config.get_config()['misic_folder'],
-                                                      user_id, config.get_config()['ffmpeg_patch'],
-                                                      proxy=config.get_config()['proxy'])
+            state = music_downloader.youtube_download(user_input,
+                                                      config.get_config()['misic_folder'],
+                                                      user_id,
+                                                      config.get_config()['ffmpeg_patch'],
+                                                      proxy=config.get_config()['proxy'],
+                                                      login="oauth",
+                                                      password="")
             if state == 1:
                 bot.send_message(user_id, 'Ваша песня успешно загружена!')
             elif state == 0:
